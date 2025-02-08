@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+  push:
+    branches:
+      - "main"
+
+jobs:
+  app-ci:
+    uses: junipersquare/github-actions-workflows/.github/workflows/node-browser-app-ci.yaml@main
+    with:
+      node-linker: pnp
+    secrets:
+      aws-access-key-id: ${{ secrets.TERRAFORM_AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.TERRAFORM_AWS_SECRET_ACCESS_KEY }}
+      dd-api-key: ${{ secrets.DD_API_KEY }}
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  ci_required_job:
+    if: always()
+    needs: [app-ci]
+    runs-on: ubuntu-latest
+    steps:
+      - if: ${{ needs.app-ci.result != 'success' }}
+        run: exit 1

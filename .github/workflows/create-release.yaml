@@ -1,0 +1,88 @@
+# This Actions workflow creates a new Github Release on push to main.
+
+name: Create Release
+
+# What triggers a release? Branch strategy?
+on:
+  push:
+    branches:
+      - main
+
+env:
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+
+jobs:
+  generate-version:
+    name: Generate Version and Release
+    runs-on: [junipersquare-1vcpu-2gb-amd]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Get Short SHA
+        id: short-sha
+        run: echo "short-sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Get Current Production Version
+        uses: cardinalby/git-get-release-action@be09b316844f42b79a2bafa11e6fbf887450fc87
+        id: current-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITOPS_TOKEN }}
+        with:
+          releaseNameRegEx: ^v
+          prerelease: false
+          latest: true
+
+      - name: Get Next Version
+        id: get-next-version
+        uses: christian-draeger/increment-semantic-version@c04c50b6ca32272b43e9693183f65dd65121a743
+        with:
+          current-version: ${{ steps.current-release.outputs.tag_name }}
+          version-fragment: "feature"
+
+      - name: Create Prerelease
+        id: create-prerelease
+        if: ${{ env.BRANCH_NAME != 'main' }}
+        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5
+        with:
+          tag_name: ${{ steps.get-next-version.outputs.next-version }}-dev.${{ steps.short-sha.outputs.short-sha }}
+          name: v${{ steps.get-next-version.outputs.next-version }}-dev.${{ steps.short-sha.outputs.short-sha }}
+          target_commitish: ${{ env.BRANCH_NAME }}
+          generate_release_notes: true
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITOPS_TOKEN }}
+
+      - name: Create Release
+        id: create-release
+        if: ${{ env.BRANCH_NAME == 'main' }}
+        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5
+        with:
+          tag_name: ${{ steps.get-next-version.outputs.next-version }}
+          name: v${{ steps.get-next-version.outputs.next-version }}
+          target_commitish: ${{ env.BRANCH_NAME }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITOPS_TOKEN }}
+
+      - name: Parse JIRA Issues
+        id: extract-jira-issues
+        if: ${{ env.BRANCH_NAME == 'main' }}
+        uses: HighwayThree/jira-extract-issue-keys@8050830121f3eab19553d2f0c0150873a8d1b51b
+        continue-on-error: true
+        with:
+          parse-all-commits: true
+
+      - name: Set JIRA Fix Version
+        id: set-jira-fix-version
+        if: ${{ steps.extract-jira-issues.outputs.jira-keys }}
+        uses: crassula/jira-release-action@2799aa58bff99f2bfd3558ed8d6972f375dd7f9a
+        continue-on-error: true
+        with:
+          domain: ${{ secrets.JIRA_HOST }}
+          username: ${{ secrets.JIRA_EMAIL }}
+          password: ${{ secrets.JIRA_AUTH_TOKEN }}
+          versionName: v${{ steps.get-next-version.outputs.next-version }}
+          versionDescription: "🚀🚀🚀"
+          release: true
+          issueKeys: ${{ steps.extract-jira-issues.outputs.jira-keys }}

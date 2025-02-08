@@ -1,0 +1,37 @@
+name: Renovate
+on:
+  workflow_dispatch:
+
+jobs:
+  codeartifact-token:
+    runs-on: depot-ubuntu-22.04-small
+    outputs:
+      codeartifact-token: ${{ steps.login-codeartifact.outputs.codeartifact-token }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: CodeArtifact Login (Internal NPM repo)
+        id: login-codeartifact
+        uses: junipersquare/github-actions-workflows/.github/actions/login-codeartifact@main
+        with:
+          aws-access-key-id: ${{ secrets.TERRAFORM_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.TERRAFORM_AWS_SECRET_ACCESS_KEY }}
+
+  renovate:
+    runs-on: depot-ubuntu-22.04
+    needs: [codeartifact-token]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Renovate
+        id: renovate
+        uses: renovatebot/github-action@v41.0.11
+        with:
+          token: ${{ secrets.GITOPS_TOKEN }}
+          configurationFile: .github/renovate/renovate.json5
+        env:
+          RENOVATE_NPM_JSQ__972451838497_D_CODEARTIFACT_US_WEST_2_AMAZONAWS_COM_NPM_SHARED_USERNAME: "aws"
+          RENOVATE_NPM_JSQ__972451838497_D_CODEARTIFACT_US_WEST_2_AMAZONAWS_COM_NPM_SHARED_PASSWORD: ${{ needs.codeartifact-token.outputs.codeartifact-token }}
+          LOG_LEVEL: 'debug'

@@ -1,0 +1,33 @@
+# Please pin 3rd party Github Actions to a specific commit sha.
+
+name: Destroy Preview Environment
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  remove-manifests:
+    name: Remove Manifests
+    runs-on: [junipersquare-2vcpu-4gb-amd]
+    steps:
+      - name: Git Checkout
+        id: git-checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        with:
+          repository: junipersquare/application-manifests
+          ref: main
+          path: pr-${{ github.event.number }}
+          token: ${{ secrets.GITOPS_TOKEN }}
+
+      - name: Delete Manifests
+        run: |
+          if [ -d "pr-${{ github.event.number }}" ]; then
+            cd pr-${{ github.event.number }}
+            rm -rf ${{ github.event.repository.name }}/preview/${{ github.event.number }}
+            git config --global user.email "junibot@junipersquare.com"
+            git config --global user.name "junibot"
+            git add .
+            git commit -m "Remove manifests for PR #${{ github.event.number }}"
+            git push
+          fi

@@ -1,0 +1,11 @@
+{
+  username: "renovate-release",
+  gitAuthor: "Renovate Bot <bot@renovateapp.com>",
+  onboarding: true,
+  onboardingConfig: {
+    $schema: "https://docs.renovatebot.com/renovate-schema.json",
+    extends: ["config:recommended"]
+  },
+  platform: "github",
+  repositories: ["junipersquare/soa-frontend-service-template"],
+}
