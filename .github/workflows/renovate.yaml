@@ -30,8 +30,11 @@ jobs:
         uses: renovatebot/github-action@v41.0.11
         with:
           token: ${{ secrets.GITOPS_TOKEN }}
-          configurationFile: .github/renovate/renovate.json5
+          configurationFile: .github/renovate.json5
         env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          RENOVATE_USERNAME: renovate-release
           RENOVATE_NPM_JSQ__972451838497_D_CODEARTIFACT_US_WEST_2_AMAZONAWS_COM_NPM_SHARED_USERNAME: "aws"
           RENOVATE_NPM_JSQ__972451838497_D_CODEARTIFACT_US_WEST_2_AMAZONAWS_COM_NPM_SHARED_PASSWORD: ${{ needs.codeartifact-token.outputs.codeartifact-token }}
-          LOG_LEVEL: 'debug'
+          LOG_LEVEL: debug
+          RENOVATE_PLATFORM: github
