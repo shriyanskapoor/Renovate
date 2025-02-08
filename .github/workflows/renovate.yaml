@@ -36,5 +36,5 @@ jobs:
           RENOVATE_USERNAME: renovate-release
           RENOVATE_NPM_JSQ__972451838497_D_CODEARTIFACT_US_WEST_2_AMAZONAWS_COM_NPM_SHARED_USERNAME: "aws"
           RENOVATE_NPM_JSQ__972451838497_D_CODEARTIFACT_US_WEST_2_AMAZONAWS_COM_NPM_SHARED_PASSWORD: ${{ needs.codeartifact-token.outputs.codeartifact-token }}
-          LOG_LEVEL: debug
           RENOVATE_PLATFORM: github
+          LOG_LEVEL: debug
